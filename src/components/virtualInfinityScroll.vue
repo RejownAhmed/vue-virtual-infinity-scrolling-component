@@ -157,11 +157,10 @@ function handleScroll() {
       endIndex = index;
     }
   });
-  // console.log(startIndex, endIndex);
-  // return
-  // Get new items when at the bottom
+
   if (sT + cH >= sH) {
-    if (props.totalItems > props.Items.length) {
+    // Get new items when at the bottom and a request is not pending yet
+    if (props.totalItems > props.Items.length && !props.pendingState) {
       emit("getNewItems");
     }
   } else {
