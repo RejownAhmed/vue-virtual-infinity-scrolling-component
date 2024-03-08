@@ -5,18 +5,20 @@
     </div>
     <div :style="spacerStyle"></div>
     <div :style="scrollBoxStyle" :class="props.containerClass" ref="scrollBox">
-      <template v-if="Items.length">
-        <div
-          class="virtual-scroll-item"
-          v-for="(item, index) in visibleItems"
-          :key="item.id"
-          :data-key="item[props.uniqueKey]"
-        >
-          <slot :item="item" name="item">
-            {{ item[props.uniqueKey] }}
-          </slot>
-        </div>
-      </template>
+      <!-- <TransitionGroup :name="props.transitionName"> -->
+        <template v-if="props.Items.length">
+          <div
+            class="virtual-scroll-item"
+            v-for="(item, index) in visibleItems"
+            :key="item[props.uniqueKey]"
+            :data-key="item[props.uniqueKey]"
+          >
+            <slot :item="item" name="item">
+              {{ item[props.uniqueKey] }}
+            </slot>
+          </div>
+        </template>
+      <!-- </TransitionGroup> -->
       <template v-if="!props.pendingState && !Items.length">
         <slot name="noData"> No items available to show! </slot>
       </template>
@@ -28,12 +30,13 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, toRefs, watch } from "vue";
+import { ref, computed, nextTick, onMounted, watch } from "vue";
 
 const props = defineProps({
   Items: {
     type: Array,
     required: true,
+    default: []
   },
   totalItems: {
     type: Number,
@@ -47,12 +50,13 @@ const props = defineProps({
     type: Number,
     default: 5,
   },
-  deletedItems: Array,
   containerClass: String,
   pendingState: Boolean,
+  // transitionName: {
+  //   type:  String,
+  //   default: "list"
+  // }
 });
-
-const { Items, deletedItems } = toRefs(props);
 
 const emit = defineEmits(["getNewItems"]);
 
@@ -75,7 +79,7 @@ const visibleItems = computed(() =>
 // Style for the spacer, it helps keep the scroll bar positioned properly
 const spacerStyle = computed(() => {
   return {
-    height: `${itemHeights.value.reduce((acc, height) => acc + height, 0)}px`,
+    height: `${itemHeights.value.reduce((acc, height) => acc + height.value, 0)}px`,
   };
 });
 
@@ -85,7 +89,7 @@ const scrollBoxStyle = computed(() => ({
   position: "absolute",
   top: `${itemHeights.value
     .slice(0, Math.max(0, visibleStartIndex.value))
-    .reduce((acc, height) => acc + height, 0)}px`,
+    .reduce((acc, height) => acc + height.value, 0)}px`,
   left: "0",
   right: "0",
 }));
@@ -93,8 +97,18 @@ const scrollBoxStyle = computed(() => ({
 // Insert item heights for new items
 const updateItemHeights = (item) => {
   const key = item.dataset.key;
-  const index = props.Items.findIndex((i) => i[props.uniqueKey] == key);
-  itemHeights.value[index] = item.offsetHeight;
+  const iH = itemHeights.value.find(height=> height[props.uniqueKey] == key);
+  if (iH) {
+    // If already height exist update
+    iH.value = item.offsetHeight;
+  } else {
+    // If not add new Height
+    itemHeights.value.push({
+      [props.uniqueKey]: key,
+      value: item.offsetHeight
+    });
+
+  }
 };
 
 // When new items added
@@ -110,35 +124,41 @@ const onItemsAdd = () => {
 
 // remove specific items from the items array
 const onItemsDelete = () => {
-  props.deletedItems.forEach((deletableItem) => {
-    const index = props.Items.findIndex(
-      (item) => item[props.uniqueKey] === deletableItem[props.uniqueKey]
-    );
-    props.Items.splice(index, 1);
-  });
+  itemHeights.value = itemHeights.value.filter(height=> {
+    let state = false;
+    props.Items.forEach(item=> {
+      if (height[props.uniqueKey] == item[props.uniqueKey]) {
+        state = true;
+      }
+    });
+    return state;
+  })
 };
 
+let prevLen = 0;
 // Set new items when added
 watch(
   () => props.Items,
-  () => {
-    if (props.Items?.length) {
-      onItemsAdd();
-    } else {
+  (newItems) => {
+    const newLen = newItems.length;
+    // If the items array empty
+    if (!newLen) {
       itemHeights.value = [];
       visibleStartIndex.value = 0;
       visibleEndIndex.value = 1000;
+    }
+    // New items added
+    else if (newLen > prevLen) {
+      onItemsAdd();
+      prevLen = newLen;
+    } else {
+      // Items removed
+      onItemsDelete();
     }
   }, {
     deep: true
   }
 );
-
-watch(deletedItems, () => {
-  if (props.deletedItems?.length) {
-    onItemsDelete();
-  }
-});
 
 const containerHeight = computed(() => container.value?.clientHeight || 0);
 // Function to handle the scroll event
@@ -149,7 +169,7 @@ function handleScroll() {
   let startIndex = 0;
   let endIndex = 1000;
   itemHeights.value.forEach((height, index) => {
-    heightSum += height;
+    heightSum += height.value;
     if (heightSum < sT) {
       startIndex = index;
     }
