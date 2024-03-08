@@ -1,18 +1,19 @@
 <script setup>
-import {ref, onMounted} from "vue";
+import {ref} from "vue";
 
 import virtualInfinityScroll from './components/virtualInfinityScroll.vue'
 
-function generate(perPage = 10, currentPage = 1) {
+const startId = ref(1);
+
+function generate(perPage = 10) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       const items = [];
-      const startId = perPage * (currentPage - 1) + 1;
-
       for (let i = 0; i < perPage; i++) {
-        const id = startId + i;
+        const id = startId.value;
         const title = `Item ${id}`;
         items.push({ id, title });
+        startId.value++;
       }
 
       resolve(items);
