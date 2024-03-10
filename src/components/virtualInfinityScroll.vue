@@ -1,12 +1,9 @@
 <template>
   <div ref="container" class="virtual-scroll-container" @scroll="handleScroll">
-    <div style="position: fixed; top: 0">
-      {{ visibleItems.length }}
-    </div>
     <div :style="spacerStyle"></div>
     <div :style="scrollBoxStyle" :class="props.containerClass" ref="scrollBox">
       <!-- <TransitionGroup :name="props.transitionName"> -->
-        <template v-if="props.Items.length">
+        <template v-if="props.items.length">
           <div
             class="virtual-scroll-item"
             v-for="(item, index) in visibleItems"
@@ -19,8 +16,8 @@
           </div>
         </template>
       <!-- </TransitionGroup> -->
-      <template v-if="!props.pendingState && !Items.length">
-        <slot name="noData"> No items available to show! </slot>
+      <template v-if="!props.pendingState && !items.length">
+        <slot name="empty"> No items available to show! </slot>
       </template>
       <template v-if="props.pendingState">
         <slot name="loader"> Loading... </slot>
@@ -33,7 +30,7 @@
 import { ref, computed, nextTick, onMounted, watch } from "vue";
 
 const props = defineProps({
-  Items: {
+  items: {
     type: Array,
     required: true,
     default: []
@@ -42,7 +39,8 @@ const props = defineProps({
     type: Number,
     default: 1000,
   },
-  uniqueKey: {
+  // Must provide to render it properly
+  uniqueKey: { 
     type: String,
     default: "id",
   },
@@ -73,7 +71,7 @@ const itemHeights = ref([]);
 
 // Visible items in the viewport
 const visibleItems = computed(() =>
-  props.Items.slice(visibleStartIndex.value, visibleEndIndex.value)
+  props.items.slice(visibleStartIndex.value, visibleEndIndex.value)
 );
 
 // Style for the spacer, it helps keep the scroll bar positioned properly
@@ -113,7 +111,7 @@ const updateItemHeights = (item) => {
 
 // When new items added
 const onItemsAdd = () => {
-  visibleEndIndex.value = props.Items.length;
+  visibleEndIndex.value = props.items.length;
   // Get the heights immedidiately after dom updates
   nextTick(() => {
     Array.from(scrollBox.value.children).forEach((item) => {
@@ -126,7 +124,7 @@ const onItemsAdd = () => {
 const onItemsDelete = () => {
   itemHeights.value = itemHeights.value.filter(height=> {
     let state = false;
-    props.Items.forEach(item=> {
+    props.items.forEach(item=> {
       if (height[props.uniqueKey] == item[props.uniqueKey]) {
         state = true;
       }
@@ -138,7 +136,7 @@ const onItemsDelete = () => {
 let prevLen = 0;
 // Set new items when added
 watch(
-  () => props.Items,
+  () => props.items,
   (newItems) => {
     const newLen = newItems.length;
     // If the items array empty
@@ -152,7 +150,7 @@ watch(
       onItemsAdd();
       prevLen = newLen;
     } else {
-      // Items removed
+      // items removed
       onItemsDelete();
     }
   }, {
@@ -180,13 +178,13 @@ function handleScroll() {
 
   if (sT + cH >= sH) {
     // Get new items when at the bottom and a request is not pending yet
-    if (props.totalItems > props.Items.length && !props.pendingState) {
+    if (props.totalItems > props.items.length && !props.pendingState) {
       emit("getNewItems");
     }
   } else {
     // Set start and end index only when there's still space to scroll down
     visibleEndIndex.value = Math.min(
-      props.Items.length,
+      props.items.length,
       endIndex + props.bufferSize
     );
     visibleStartIndex.value = Math.max(0, startIndex - props.bufferSize);

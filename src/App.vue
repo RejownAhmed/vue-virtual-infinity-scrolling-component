@@ -2,7 +2,6 @@
 import { ref } from "vue";
 
 import virtualInfinityScroll from "./components/virtualInfinityScroll.vue";
-
 const startId = ref(1);
 
 function generate(perPage = 10) {
@@ -24,7 +23,6 @@ function generate(perPage = 10) {
 const items = ref([]);
 const preloader = ref(false);
 const totalItems = ref(1000);
-const deletedItems = ref([]);
 const currentPage = ref(1);
 
 const getNewItems = () => {
@@ -50,12 +48,11 @@ const deleteItem = (item)=> {
     <virtual-infinity-scroll
       class="scroller"
       container-class="container"
-      :Items="items"
+      :items="items"
       unique-key="id"
       :total-items="totalItems"
       :pending-state="preloader"
       :buffer-size="5"
-      :deleted-items="deletedItems"
       @getNewItems="getNewItems()"
     >
       <template #item="{ item }">
@@ -65,7 +62,7 @@ const deleteItem = (item)=> {
           <button @click="deleteItem(item)">Delete</button>
         </div>
       </template>
-      <template #noData> Nothing found! </template>
+      <template #empty> Nothing found! </template>
       <template #loader> Loading ..... </template>
     </virtual-infinity-scroll>
   </div>
