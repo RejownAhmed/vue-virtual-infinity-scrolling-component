@@ -4,4 +4,9 @@ Go to to components folder and dowload the virtualInfinityScroll.vue component. 
 
 ### You can also check the stack blitz link here: https://stackblitz.com/edit/vitejs-vite-p3l5ux
 
+
+## Video Tutorial:
+**Facebook:** https://fb.watch/qNcntYH3ZQ/
+
+**Youtube:** https://www.youtube.com/watch?v=fHbMjmjM-tg
 ## Thank you
